@@ -3,26 +3,36 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
+	"github.com/charmbracelet/bubbles/stopwatch"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 func main() {
-	err := tea.NewProgram(&Model{}, tea.WithAltScreen()).Start()
+	m := model{
+		stopwatch: stopwatch.NewWithInterval(time.Millisecond),
+	}
+	err := tea.NewProgram(m, tea.WithAltScreen()).Start()
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+
+	connectToServer()
+
 }
 
-type Model struct{}
-
-func (m *Model) Init() tea.Cmd {
-	return nil
+type model struct {
+	stopwatch stopwatch.Model
 }
 
-func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m model) Init() tea.Cmd {
+	return m.stopwatch.Init()
+}
+
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -30,10 +40,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 	}
-	return m, nil
+	var cmd tea.Cmd
+	m.stopwatch, cmd = m.stopwatch.Update(msg)
+	return m, cmd
 
 }
 
-func (m *Model) View() string {
-	return "This is a test"
+func (m model) View() string {
+	s := m.stopwatch.View() + "\n"
+	s = "Elapsed: " + s
+	return s
 }
