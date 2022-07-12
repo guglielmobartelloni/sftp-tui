@@ -30,8 +30,6 @@ func connectToServer() {
 
 	fmt.Println(c.List("/"))
 
-	// Do something with the FTP conn
-
 	if err := c.Quit(); err != nil {
 		log.Fatal(err)
 	}

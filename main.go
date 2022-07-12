@@ -3,16 +3,27 @@ package main
 import (
 	"fmt"
 	"os"
-	"time"
 
-	"github.com/charmbracelet/bubbles/stopwatch"
+	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
+var docStyle = lipgloss.NewStyle().Margin(1, 2)
+
 func main() {
-	m := model{
-		stopwatch: stopwatch.NewWithInterval(time.Millisecond),
+	// connectToServer()
+	sshConnection := StartConnection()
+	fileList := sshConnection.Ls()
+
+	items := []list.Item{}
+
+	for _, file := range fileList {
+		items = append(items, item{title: file})
 	}
+
+	m := model{list: list.New(items, list.NewDefaultDelegate(), 0, 0)}
+	m.list.Title = "My Fave Things"
 	err := tea.NewProgram(m, tea.WithAltScreen()).Start()
 
 	if err != nil {
@@ -20,16 +31,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	connectToServer()
-
 }
 
 type model struct {
-	stopwatch stopwatch.Model
+	list list.Model
 }
 
 func (m model) Init() tea.Cmd {
-	return m.stopwatch.Init()
+	return nil
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -39,15 +48,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		}
+	case tea.WindowSizeMsg:
+		h, v := docStyle.GetFrameSize()
+		m.list.SetSize(msg.Width-h, msg.Height-v)
 	}
 	var cmd tea.Cmd
-	m.stopwatch, cmd = m.stopwatch.Update(msg)
+	m.list, cmd = m.list.Update(msg)
 	return m, cmd
 
 }
 
 func (m model) View() string {
-	s := m.stopwatch.View() + "\n"
-	s = "Elapsed: " + s
-	return s
+	return docStyle.Render(m.list.View())
 }
+
+type item struct {
+	title string
+}
+
+func (i item) Title() string       { return i.title }
+func (i item) Description() string { return "" }
+func (i item) FilterValue() string { return i.title }
