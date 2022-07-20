@@ -1,9 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -13,23 +10,17 @@ var docStyle = lipgloss.NewStyle().Margin(1, 2)
 
 func main() {
 	// connectToServer()
-	sshConnection := StartConnection()
-	fileList := sshConnection.Ls()
 
-	items := []list.Item{}
+	// items := []list.Item{}
 
-	for _, file := range fileList {
-		items = append(items, item{title: file})
-	}
+	// m := model{list: list.New(items, list.NewDefaultDelegate(), 0, 0)}
+	// m.list.Title = "My Fave Things"
+	// err := tea.NewProgram(m, tea.WithAltScreen()).Start()
 
-	m := model{list: list.New(items, list.NewDefaultDelegate(), 0, 0)}
-	m.list.Title = "My Fave Things"
-	err := tea.NewProgram(m, tea.WithAltScreen()).Start()
-
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
+	// if err != nil {
+	// 	fmt.Fprintln(os.Stderr, err)
+	// 	os.Exit(1)
+	// }
 
 	connectToServer()
 
