@@ -22,22 +22,20 @@ func connectToServer() {
 		ftp.DialWithDisabledEPSV(true),
 	)
 
-	logErr(err)
+	handleError(err)
 
 	err = c.Login(os.Getenv("username"), os.Getenv("password"))
 
-	logErr(err)
+	handleError(err)
 
 	c.ChangeDir("/media")
-	c.Type("I")
-	c.List("")
 
 	if err := c.Quit(); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func logErr(err error) {
+func handleError(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
