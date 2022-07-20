@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/tls"
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -20,6 +19,7 @@ func connectToServer() {
 		),
 		ftp.DialWithDebugOutput(os.Stdout),
 		ftp.DialWithTimeout(5*time.Second),
+		ftp.DialWithDisabledEPSV(true),
 	)
 
 	logErr(err)
@@ -28,7 +28,9 @@ func connectToServer() {
 
 	logErr(err)
 
-	fmt.Println(c.List("/"))
+	c.ChangeDir("/media")
+	c.Type("I")
+	c.List("")
 
 	if err := c.Quit(); err != nil {
 		log.Fatal(err)

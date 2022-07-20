@@ -31,6 +31,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	connectToServer()
+
 }
 
 type model struct {
