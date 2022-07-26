@@ -2,9 +2,9 @@ package main
 
 import (
 	"crypto/tls"
+	"io/ioutil"
 	"log"
 	"os"
-	"time"
 
 	ftp "github.com/jlaffaye/ftp"
 )
@@ -18,7 +18,7 @@ func connectToServer() {
 			},
 		),
 		ftp.DialWithDebugOutput(os.Stdout),
-		ftp.DialWithTimeout(5*time.Second),
+		// ftp.DialWithTimeout(5*time.Second),
 		ftp.DialWithDisabledEPSV(true),
 	)
 
@@ -27,6 +27,16 @@ func connectToServer() {
 	err = c.Login(os.Getenv("username"), os.Getenv("password"))
 
 	handleError(err)
+
+	r, err := c.Retr(".bashrc")
+	if err != nil {
+		panic(err)
+	}
+	defer r.Close()
+
+	buf, err := ioutil.ReadAll(r)
+	handleError(err)
+	println(string(buf))
 
 	c.ChangeDir("/media")
 

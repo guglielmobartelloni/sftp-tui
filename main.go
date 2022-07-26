@@ -1,6 +1,10 @@
 package main
 
 import (
+	"fmt"
+	"os"
+
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -9,56 +13,58 @@ import (
 var docStyle = lipgloss.NewStyle().Margin(1, 2)
 
 func main() {
-	// connectToServer()
 
-	// items := []list.Item{}
+	m := newModel()
+	m.list.Title = "Files list"
+	err := tea.NewProgram(m, tea.WithAltScreen()).Start()
 
-	// m := model{list: list.New(items, list.NewDefaultDelegate(), 0, 0)}
-	// m.list.Title = "My Fave Things"
-	// err := tea.NewProgram(m, tea.WithAltScreen()).Start()
-
-	// if err != nil {
-	// 	fmt.Fprintln(os.Stderr, err)
-	// 	os.Exit(1)
-	// }
-
-	connectToServer()
-
-}
-
-type model struct {
-	list list.Model
-}
-
-func (m model) Init() tea.Cmd {
-	return nil
-}
-
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c", "q":
-			return m, tea.Quit
-		}
-	case tea.WindowSizeMsg:
-		h, v := docStyle.GetFrameSize()
-		m.list.SetSize(msg.Width-h, msg.Height-v)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
-	var cmd tea.Cmd
-	m.list, cmd = m.list.Update(msg)
-	return m, cmd
 
 }
 
-func (m model) View() string {
-	return docStyle.Render(m.list.View())
+func createItemList() []list.Item {
+
+	sshClient := ConnectSSH("samoorai", "/Users/samurai/.ssh/id_rsa", "", "midas.usbx.me", "22", "/Users/samurai/.ssh/known_hosts")
+
+	walker := &walker{
+		sshClient:  sshClient,
+		currentDir: "./",
+	}
+
+	// walker.GetFile("banana", "/Users/samurai/Documents/progetti/ftp-tui/test")
+
+	items := []list.Item{}
+	fileList, err := walker.Ls()
+	handleError(err)
+
+	for _, value := range fileList {
+		item := &item{title: value}
+		items = append(items, item)
+	}
+
+	return items
+
 }
 
-type item struct {
-	title string
+func newDelegateKeyMap() *delegateKeyMap {
+	return &delegateKeyMap{
+		choose: key.NewBinding(
+			key.WithKeys("enter"),
+			key.WithHelp("enter", "choose"),
+		),
+		// remove: key.NewBinding(
+		// 	key.WithKeys("x", "backspace"),
+		// 	key.WithHelp("x", "delete"),
+		// ),
+	}
 }
 
-func (i item) Title() string       { return i.title }
-func (i item) Description() string { return "" }
-func (i item) FilterValue() string { return i.title }
+func newModel() model {
+	return model{
+		list:         list.New(createItemList(), newItemDelegate(newDelegateKeyMap()), 0, 0),
+		delegateKeys: newDelegateKeyMap(),
+	}
+}
