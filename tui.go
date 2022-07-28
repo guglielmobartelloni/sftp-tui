@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -9,13 +10,23 @@ import (
 )
 
 var (
+	username       = "samoorai"
+	password       = ""
+	privateKeyPath = "/Users/samurai/.ssh/id_rsa"
+	host           = "midas.usbx.me"
+	port           = "22"
+	knownHostsPath = "/Users/samurai/.ssh/known_hosts"
+
 	docStyle           = lipgloss.NewStyle().Margin(1, 2)
 	statusMessageStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.AdaptiveColor{Light: "#04B575", Dark: "#04B575"}).
 				Render
 
 	fileItemStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.AdaptiveColor{Light: "#04B575", Dark: "#04B575"}).
+			Foreground(lipgloss.AdaptiveColor{Light: "#ffffff", Dark: "#ffffff"}).
+			Render
+	dirItemStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.AdaptiveColor{Light: "#0477b5", Dark: "#0477b5"}).
 			Render
 )
 
@@ -40,7 +51,7 @@ func (m model) Init() tea.Cmd {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.walker == nil {
-		sshClient := ConnectSSH("samoorai", "/Users/samurai/.ssh/id_rsa", "", "midas.usbx.me", "22", "/Users/samurai/.ssh/known_hosts")
+		sshClient := ConnectSSH(username, privateKeyPath, password, host, port, knownHostsPath)
 		m.walker = &walker{
 			sshClient:  sshClient,
 			currentDir: "./",
@@ -55,9 +66,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "enter":
 			selectedItem := m.list.SelectedItem().FilterValue()
-			cmd := m.list.NewStatusMessage(statusMessageStyle(fmt.Sprintf("Downloading %s", "banana")))
+			cmd := m.list.NewStatusMessage(statusMessageStyle(fmt.Sprintf("Downloading %s", selectedItem)))
 			m.walker.GetFile(selectedItem, fmt.Sprintf("./%s", selectedItem))
-
 			return m, cmd
 		}
 	case tea.WindowSizeMsg:
@@ -76,7 +86,7 @@ func (m model) View() string {
 
 func createItemList() []list.Item {
 
-	sshClient := ConnectSSH("samoorai", "/Users/samurai/.ssh/id_rsa", "", "midas.usbx.me", "22", "/Users/samurai/.ssh/known_hosts")
+	sshClient := ConnectSSH(username, privateKeyPath, password, host, port, knownHostsPath)
 	walker := &walker{
 		sshClient:  sshClient,
 		currentDir: "./",
@@ -90,7 +100,7 @@ func createItemList() []list.Item {
 	fmt.Println(fileList)
 
 	for _, value := range fileList {
-		item := &item{title: fileItemStyle(value), description: "This is a file"}
+		item := &item{title: value}
 		items = append(items, item)
 	}
 
@@ -99,9 +109,13 @@ func createItemList() []list.Item {
 	fmt.Println(fileList)
 
 	for _, value := range dirList {
-		item := &item{title: value, description: "This is a dir"}
+		item := &item{title: dirItemStyle(value)}
 		items = append(items, item)
 	}
+
+	sort.SliceStable(items, func(i, j int) bool {
+		return items[i].FilterValue() < items[j].FilterValue()
+	})
 
 	return items
 
