@@ -132,7 +132,6 @@ func RunCommand(cmd string, sshClient *ssh.Client) (string, error) {
 
 	var output []byte
 	output, err = session.Output("ls")
-	fmt.Printf("output: %v\n", output)
 
 	return string(output), err
 }
