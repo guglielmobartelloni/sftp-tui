@@ -1,27 +1,13 @@
 package main
 
 import (
-	"fmt"
-	"os"
-
-	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
 var docStyle = lipgloss.NewStyle().Margin(1, 2)
 
 func main() {
-
-	m := newModel()
-	m.list.Title = "Files list"
-	err := tea.NewProgram(m, tea.WithAltScreen()).Start()
-
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
 
 }
 
@@ -47,24 +33,4 @@ func createItemList() []list.Item {
 
 	return items
 
-}
-
-func newDelegateKeyMap() *delegateKeyMap {
-	return &delegateKeyMap{
-		choose: key.NewBinding(
-			key.WithKeys("enter"),
-			key.WithHelp("enter", "choose"),
-		),
-		// remove: key.NewBinding(
-		// 	key.WithKeys("x", "backspace"),
-		// 	key.WithHelp("x", "delete"),
-		// ),
-	}
-}
-
-func newModel() model {
-	return model{
-		list:         list.New(createItemList(), newItemDelegate(newDelegateKeyMap()), 0, 0),
-		delegateKeys: newDelegateKeyMap(),
-	}
 }
