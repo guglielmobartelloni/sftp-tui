@@ -97,7 +97,6 @@ func createItemList() []list.Item {
 
 	fileList, err := walker.LsFiles()
 	handleError(err)
-	fmt.Println(fileList)
 
 	for _, value := range fileList {
 		item := &item{title: value}
@@ -106,7 +105,6 @@ func createItemList() []list.Item {
 
 	dirList, err := walker.LsDir()
 	handleError(err)
-	fmt.Println(fileList)
 
 	for _, value := range dirList {
 		item := &item{title: dirItemStyle(value)}

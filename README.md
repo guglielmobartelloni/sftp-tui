@@ -1,5 +1,5 @@
-# FTP TUI
-An FTP client written in GO
+# SCP TUI
+An SCP client written in GO
 
 ## License
 MIT
