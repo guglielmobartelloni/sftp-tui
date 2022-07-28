@@ -13,6 +13,10 @@ var (
 	statusMessageStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.AdaptiveColor{Light: "#04B575", Dark: "#04B575"}).
 				Render
+
+	fileItemStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.AdaptiveColor{Light: "#04B575", Dark: "#04B575"}).
+			Render
 )
 
 type item struct {
@@ -80,15 +84,25 @@ func createItemList() []list.Item {
 	// walker.GetFile("banana", "/Users/samurai/Documents/progetti/ftp-tui/test")
 
 	items := []list.Item{}
-	fileList, err := walker.LsDir()
+
+	fileList, err := walker.LsFiles()
 	handleError(err)
 	fmt.Println(fileList)
 
 	for _, value := range fileList {
-		item := &item{title: value}
+		item := &item{title: fileItemStyle(value), description: "This is a file"}
 		items = append(items, item)
 	}
 
-	return items[:len(items)-1]
+	dirList, err := walker.LsDir()
+	handleError(err)
+	fmt.Println(fileList)
+
+	for _, value := range dirList {
+		item := &item{title: value, description: "This is a dir"}
+		items = append(items, item)
+	}
+
+	return items
 
 }
