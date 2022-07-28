@@ -131,7 +131,7 @@ func RunCommand(cmd string, sshClient *ssh.Client) (string, error) {
 	handleError(err)
 
 	var output []byte
-	output, err = session.Output("ls")
+	output, err = session.Output(cmd)
 
 	return string(output), err
 }
