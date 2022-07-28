@@ -13,6 +13,7 @@ func TestDirList(t *testing.T) {
 		sshClient:  sshClient,
 		currentDir: "./",
 	}
+	fmt.Println(walker.LsDir())
 	fmt.Println(walker.LsFiles())
 
 }

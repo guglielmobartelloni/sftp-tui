@@ -18,15 +18,18 @@ type walker struct {
 
 func (w *walker) LsFiles() ([]string, error) {
 	output, err := RunCommand("ls -p | grep -v /", w.sshClient)
-	return strings.Split(output, "\n"), err
+	// output, err := RunCommand("ls --color", w.sshClient)
+	fileList := strings.Split(output, "\n")
+	return fileList[:len(fileList)-1], err
 }
 
 func (w *walker) LsDir() ([]string, error) {
 	output, err := RunCommand("find . -maxdepth 1 -type d -print", w.sshClient)
 	dirList := strings.Split(output, "\n")
 	//Strip the first two char from the file list
-	for _, v := range dirList {
-		fmt.Printf("v: %v\n", v)
+	dirList = dirList[1 : len(dirList)-1]
+	for i, v := range dirList {
+		dirList[i] = v[2:]
 	}
 	return dirList, err
 }
