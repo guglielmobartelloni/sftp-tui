@@ -30,23 +30,30 @@ type model struct {
 }
 
 func (m model) Init() tea.Cmd {
-	sshClient := ConnectSSH("samoorai", "/Users/samurai/.ssh/id_rsa", "", "midas.usbx.me", "22", "/Users/samurai/.ssh/known_hosts")
-	m.walker = &walker{
-		sshClient:  sshClient,
-		currentDir: "./",
-	}
 	return nil
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+
+	if m.walker == nil {
+		sshClient := ConnectSSH("samoorai", "/Users/samurai/.ssh/id_rsa", "", "midas.usbx.me", "22", "/Users/samurai/.ssh/known_hosts")
+		m.walker = &walker{
+			sshClient:  sshClient,
+			currentDir: "./",
+		}
+
+	}
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "enter":
-			cmd := m.list.NewStatusMessage(statusMessageStyle(fmt.Sprintf("Donwloading %s", "banana")))
-			m.walker.GetFile("banana", "/Users/samurai/Documents/progetti/ftp-tui/test")
+			selectedItem := m.list.SelectedItem().FilterValue()
+			cmd := m.list.NewStatusMessage(statusMessageStyle(fmt.Sprintf("Downloading %s", "banana")))
+			m.walker.GetFile(selectedItem, fmt.Sprintf("./%s", selectedItem))
+
 			return m, cmd
 		}
 	case tea.WindowSizeMsg:
@@ -73,7 +80,7 @@ func createItemList() []list.Item {
 	// walker.GetFile("banana", "/Users/samurai/Documents/progetti/ftp-tui/test")
 
 	items := []list.Item{}
-	fileList, err := walker.Ls()
+	fileList, err := walker.LsDir()
 	handleError(err)
 	fmt.Println(fileList)
 

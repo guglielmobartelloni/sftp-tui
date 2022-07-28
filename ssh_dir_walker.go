@@ -16,9 +16,19 @@ type walker struct {
 	currentDir string
 }
 
-func (w *walker) Ls() ([]string, error) {
-	output, err := RunCommand("ls", w.sshClient)
+func (w *walker) LsFiles() ([]string, error) {
+	output, err := RunCommand("ls -p | grep -v /", w.sshClient)
 	return strings.Split(output, "\n"), err
+}
+
+func (w *walker) LsDir() ([]string, error) {
+	output, err := RunCommand("find . -maxdepth 1 -type d -print", w.sshClient)
+	dirList := strings.Split(output, "\n")
+	//Strip the first two char from the file list
+	for _, v := range dirList {
+		fmt.Printf("v: %v\n", v)
+	}
+	return dirList, err
 }
 
 func (w *walker) Cd(dir string) ([]string, error) {
