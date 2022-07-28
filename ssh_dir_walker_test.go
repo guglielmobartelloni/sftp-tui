@@ -1,19 +1,35 @@
 package main
 
 import (
-	"fmt"
 	"testing"
+
+	"golang.org/x/exp/slices"
 )
 
 // TestHelloName calls greetings.Hello with a name, checking
 // for a valid return value.
-func TestDirList(t *testing.T) {
-	sshClient := ConnectSSH("samoorai", "/Users/samurai/.ssh/id_rsa", "", "midas.usbx.me", "22", "/Users/samurai/.ssh/known_hosts")
+func TestFilesList(t *testing.T) {
+	sshClient := ConnectSSH(username, privateKeyPath, password, host, port, knownHostsPath)
 	walker := &walker{
 		sshClient:  sshClient,
 		currentDir: "./",
 	}
-	fmt.Println(walker.LsDir())
-	fmt.Println(walker.LsFiles())
+	files, err := walker.LsFiles()
+	handleError(err)
+	if !sliceContains(files, []string{"banana", "fragola"}) {
+		t.Error("Error mock files not included")
+	}
+
+}
+
+func sliceContains(list, other []string) bool {
+
+	for _, v := range other {
+		if slices.Contains(list, v) {
+			return true
+		}
+	}
+
+	return false
 
 }

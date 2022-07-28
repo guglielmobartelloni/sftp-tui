@@ -91,8 +91,6 @@ func createItemList() []list.Item {
 		sshClient:  sshClient,
 		currentDir: "./",
 	}
-	// walker.GetFile("banana", "/Users/samurai/Documents/progetti/ftp-tui/test")
-
 	items := []list.Item{}
 
 	fileList, err := walker.LsFiles()
