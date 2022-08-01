@@ -2,21 +2,16 @@ package main
 
 import (
 	"fmt"
-	"sort"
+	"io"
+	"os"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/pkg/sftp"
 )
 
 var (
-	username       = "samoorai"
-	password       = ""
-	privateKeyPath = "/Users/samurai/.ssh/id_rsa"
-	host           = "midas.usbx.me"
-	port           = "22"
-	knownHostsPath = "/Users/samurai/.ssh/known_hosts"
-
 	docStyle           = lipgloss.NewStyle().Margin(1, 2)
 	statusMessageStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.AdaptiveColor{Light: "#04B575", Dark: "#04B575"}).
@@ -33,6 +28,7 @@ var (
 type item struct {
 	title       string
 	description string
+	rawValue    string
 }
 
 func (i item) Title() string       { return i.title }
@@ -40,8 +36,8 @@ func (i item) Description() string { return i.description }
 func (i item) FilterValue() string { return i.title }
 
 type model struct {
-	list   list.Model
-	walker *walker
+	list       list.Model
+	sftpClient *sftp.Client
 }
 
 func (m model) Init() tea.Cmd {
@@ -50,24 +46,17 @@ func (m model) Init() tea.Cmd {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
-	if m.walker == nil {
-		sshClient := ConnectSSH(username, privateKeyPath, password, host, port, knownHostsPath)
-		m.walker = &walker{
-			sshClient:  sshClient,
-			currentDir: "./",
-		}
-
-	}
-
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "enter":
-			selectedItem := m.list.SelectedItem().FilterValue()
-			cmd := m.list.NewStatusMessage(statusMessageStyle(fmt.Sprintf("Downloading %s", selectedItem)))
-			m.walker.GetFile(selectedItem, fmt.Sprintf("./%s", selectedItem))
+			selectedItem := m.list.SelectedItem().(*item).rawValue
+			cmd := m.list.NewStatusMessage(statusMessageStyle(fmt.Sprintf("Entering %s", selectedItem)))
+			err := m.downloadFile(selectedItem)
+			handleError(err)
+
 			return m, cmd
 		}
 	case tea.WindowSizeMsg:
@@ -80,38 +69,38 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+func (m model) downloadFile(fileToDownload string) error {
+	srcFile, err := m.sftpClient.Open(fileToDownload)
+	handleError(err)
+	defer srcFile.Close()
+	destFile, err := os.Create(fmt.Sprintf("./%s", fileToDownload))
+	defer destFile.Close()
+	handleError(err)
+	_, err = io.Copy(destFile, srcFile)
+	return err
+}
+
 func (m model) View() string {
 	return docStyle.Render(m.list.View())
 }
 
-func createItemList() []list.Item {
+func createItemList(sftpClient *sftp.Client) []list.Item {
+	fileList, err := sftpClient.ReadDir(".")
+	handleError(err)
 
-	sshClient := ConnectSSH(username, privateKeyPath, password, host, port, knownHostsPath)
-	walker := &walker{
-		sshClient:  sshClient,
-		currentDir: "./",
-	}
 	items := []list.Item{}
 
-	fileList, err := walker.LsFiles()
-	handleError(err)
-
 	for _, value := range fileList {
-		item := &item{title: value}
+		var decoratedItem string
+		if value.IsDir() {
+			decoratedItem = dirItemStyle(value.Name())
+		} else {
+			decoratedItem = fileItemStyle(value.Name())
+		}
+
+		item := &item{title: decoratedItem, rawValue: value.Name()}
 		items = append(items, item)
 	}
-
-	dirList, err := walker.LsDir()
-	handleError(err)
-
-	for _, value := range dirList {
-		item := &item{title: dirItemStyle(value)}
-		items = append(items, item)
-	}
-
-	sort.SliceStable(items, func(i, j int) bool {
-		return items[i].FilterValue() < items[j].FilterValue()
-	})
 
 	return items
 

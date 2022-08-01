@@ -7,12 +7,26 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/pkg/sftp"
+)
+
+var (
+	username       = "samoorai"
+	password       = ""
+	privateKeyPath = "/Users/samurai/.ssh/id_rsa"
+	host           = "midas.usbx.me"
+	port           = "22"
+	knownHostsPath = "/Users/samurai/.ssh/known_hosts"
 )
 
 func main() {
-	items := createItemList()
+	sshClient := ConnectSSH(username, privateKeyPath, password, host, port, knownHostsPath)
+	sftpClient, err := sftp.NewClient(sshClient)
+	handleError(err)
 
-	m := model{list: list.New(items, list.NewDefaultDelegate(), 0, 0)}
+	items := createItemList(sftpClient)
+
+	m := model{list: list.New(items, list.NewDefaultDelegate(), 0, 0), sftpClient: sftpClient}
 	m.list.Title = "File List"
 
 	p := tea.NewProgram(m, tea.WithAltScreen())
