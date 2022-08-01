@@ -3,7 +3,10 @@ package main
 import (
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
+
+	"path/filepath"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -28,7 +31,7 @@ var (
 type item struct {
 	title       string
 	description string
-	rawValue    string
+	rawValue    fs.FileInfo
 }
 
 func (i item) Title() string       { return i.title }
@@ -52,10 +55,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "enter":
+			var cmd tea.Cmd
 			selectedItem := m.list.SelectedItem().(*item).rawValue
-			cmd := m.list.NewStatusMessage(statusMessageStyle(fmt.Sprintf("Entering %s", selectedItem)))
-			err := m.downloadFile(selectedItem)
-			handleError(err)
+			selectedItemName := selectedItem.Name()
+			if selectedItem.IsDir() {
+				cmd = m.list.NewStatusMessage(statusMessageStyle(fmt.Sprintf("This is a dir %s", selectedItemName)))
+			} else {
+				cmd = m.list.NewStatusMessage(statusMessageStyle(fmt.Sprintf("Downloading %s", selectedItemName)))
+				err := m.downloadFile(selectedItemName)
+				handleError(err)
+			}
 
 			return m, cmd
 		}
@@ -73,7 +82,7 @@ func (m model) downloadFile(fileToDownload string) error {
 	srcFile, err := m.sftpClient.Open(fileToDownload)
 	handleError(err)
 	defer srcFile.Close()
-	destFile, err := os.Create(fmt.Sprintf("./%s", fileToDownload))
+	destFile, err := os.Create(filepath.Join(".", fileToDownload))
 	defer destFile.Close()
 	handleError(err)
 	_, err = io.Copy(destFile, srcFile)
@@ -98,7 +107,7 @@ func createItemList(sftpClient *sftp.Client) []list.Item {
 			decoratedItem = fileItemStyle(value.Name())
 		}
 
-		item := &item{title: decoratedItem, rawValue: value.Name()}
+		item := &item{title: decoratedItem, rawValue: value}
 		items = append(items, item)
 	}
 
