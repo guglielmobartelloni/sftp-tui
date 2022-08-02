@@ -46,7 +46,7 @@ type model struct {
 }
 
 func (m model) Init() tea.Cmd {
-	return createItemList(".", sftpClient)
+	return nil
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -88,12 +88,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func moveDir(cmd tea.Cmd, m *model, selectedItemName string, cmds []tea.Cmd) []tea.Cmd {
-	cmd = m.list.NewStatusMessage(statusMessageStyle(fmt.Sprintf("This is a dir %s", selectedItemName)))
 	currentWd, err := m.sftpClient.RealPath(m.sftpClient.Join(m.currentDir, selectedItemName))
 	handleError(err)
 	m.currentDir = currentWd
 
 	cmd = m.list.SetItems(createItemListModel(currentWd, sftpClient))
+	cmds = append(cmds, cmd)
+	cmd = m.list.NewStatusMessage(statusMessageStyle(fmt.Sprintf("Entered %s", selectedItemName)))
 	cmds = append(cmds, cmd)
 	return cmds
 }
@@ -111,30 +112,6 @@ func (m model) downloadFile(filePath, fileName string) error {
 
 func (m model) View() string {
 	return docStyle.Render(m.list.View())
-}
-
-func createItemList(dirPath string, sftpClient *sftp.Client) tea.Cmd {
-	return func() tea.Msg {
-		fileList, err := sftpClient.ReadDir(dirPath)
-		handleError(err)
-
-		items := []list.Item{}
-
-		for _, value := range fileList {
-			var decoratedItem string
-			if value.IsDir() {
-				decoratedItem = dirItemStyle(value.Name())
-			} else {
-				decoratedItem = fileItemStyle(value.Name())
-			}
-
-			item := &item{title: decoratedItem, rawValue: value}
-			items = append(items, item)
-		}
-
-		return items
-	}
-
 }
 
 func createItemListModel(dirPath string, sftpClient *sftp.Client) []list.Item {
