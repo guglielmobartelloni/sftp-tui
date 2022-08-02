@@ -11,22 +11,22 @@ import (
 )
 
 var (
-	username       = "samoorai"
-	password       = ""
-	privateKeyPath = "/Users/samurai/.ssh/id_rsa"
-	host           = "midas.usbx.me"
-	port           = "22"
-	knownHostsPath = "/Users/samurai/.ssh/known_hosts"
+	username        = "samoorai"
+	password        = ""
+	privateKeyPath  = "/Users/samurai/.ssh/id_rsa"
+	host            = "midas.usbx.me"
+	port            = "22"
+	knownHostsPath  = "/Users/samurai/.ssh/known_hosts"
+	sshClient       = ConnectSSH(username, privateKeyPath, password, host, port, knownHostsPath)
+	sftpClient, err = sftp.NewClient(sshClient)
 )
 
 func main() {
-	sshClient := ConnectSSH(username, privateKeyPath, password, host, port, knownHostsPath)
-	sftpClient, err := sftp.NewClient(sshClient)
-	handleError(err)
 
-	items := createItemList(sftpClient)
-
-	m := model{list: list.New(items, list.NewDefaultDelegate(), 0, 0), sftpClient: sftpClient}
+	m := model{
+		list:       list.New(createItemListModel(".", sftpClient), list.NewDefaultDelegate(), 0, 0),
+		sftpClient: sftpClient,
+	}
 	m.list.Title = "File List"
 
 	p := tea.NewProgram(m, tea.WithAltScreen())

@@ -41,13 +41,15 @@ func (i item) FilterValue() string { return i.title }
 type model struct {
 	list       list.Model
 	sftpClient *sftp.Client
+	currentDir string
 }
 
 func (m model) Init() tea.Cmd {
-	return nil
+	return createItemList(".", sftpClient)
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -60,13 +62,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			selectedItemName := selectedItem.Name()
 			if selectedItem.IsDir() {
 				cmd = m.list.NewStatusMessage(statusMessageStyle(fmt.Sprintf("This is a dir %s", selectedItemName)))
+				currentWd, err := m.sftpClient.RealPath(m.sftpClient.Join(m.currentDir, selectedItemName))
+				handleError(err)
+				m.currentDir = currentWd
+				//cmd = createItemList(currentWd, m.sftpClient)
+				//cmds = append(cmds, cmd)
+				cmd = m.list.SetItems(createItemListModel(currentWd, sftpClient))
+				cmds = append(cmds, cmd)
 			} else {
 				cmd = m.list.NewStatusMessage(statusMessageStyle(fmt.Sprintf("Downloading %s", selectedItemName)))
+				cmds = append(cmds, cmd)
 				err := m.downloadFile(selectedItemName)
 				handleError(err)
 			}
 
-			return m, cmd
+			return m, tea.Batch(cmds...)
 		}
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
@@ -93,8 +103,33 @@ func (m model) View() string {
 	return docStyle.Render(m.list.View())
 }
 
-func createItemList(sftpClient *sftp.Client) []list.Item {
-	fileList, err := sftpClient.ReadDir(".")
+func createItemList(dirPath string, sftpClient *sftp.Client) tea.Cmd {
+	return func() tea.Msg {
+		fileList, err := sftpClient.ReadDir(dirPath)
+		handleError(err)
+
+		items := []list.Item{}
+
+		for _, value := range fileList {
+			var decoratedItem string
+			if value.IsDir() {
+				decoratedItem = dirItemStyle(value.Name())
+			} else {
+				decoratedItem = fileItemStyle(value.Name())
+			}
+
+			item := &item{title: decoratedItem, rawValue: value}
+			items = append(items, item)
+		}
+
+		return items
+	}
+
+}
+
+func createItemListModel(dirPath string, sftpClient *sftp.Client) []list.Item {
+	fileList, err := sftpClient.ReadDir(dirPath)
+
 	handleError(err)
 
 	items := []list.Item{}
@@ -110,7 +145,5 @@ func createItemList(sftpClient *sftp.Client) []list.Item {
 		item := &item{title: decoratedItem, rawValue: value}
 		items = append(items, item)
 	}
-
 	return items
-
 }
