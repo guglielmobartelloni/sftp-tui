@@ -59,21 +59,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			var cmd tea.Cmd
 			selectedItem := m.list.SelectedItem().(*item).rawValue
-			selectedItemName := selectedItem.Name()
-			if selectedItem.IsDir() {
-				cmd = m.list.NewStatusMessage(statusMessageStyle(fmt.Sprintf("This is a dir %s", selectedItemName)))
-				currentWd, err := m.sftpClient.RealPath(m.sftpClient.Join(m.currentDir, selectedItemName))
-				handleError(err)
-				m.currentDir = currentWd
-				//cmd = createItemList(currentWd, m.sftpClient)
-				//cmds = append(cmds, cmd)
-				cmd = m.list.SetItems(createItemListModel(currentWd, sftpClient))
-				cmds = append(cmds, cmd)
+			//if it's nil then it is a ".." dir
+			if selectedItem == nil {
+				cmds = moveDir(cmd, &m, "..", cmds)
 			} else {
-				cmd = m.list.NewStatusMessage(statusMessageStyle(fmt.Sprintf("Downloading %s", selectedItemName)))
-				cmds = append(cmds, cmd)
-				err := m.downloadFile(selectedItemName)
-				handleError(err)
+				selectedItemName := selectedItem.Name()
+				if selectedItem.IsDir() {
+					cmds = moveDir(cmd, &m, selectedItemName, cmds)
+				} else {
+					cmd = m.list.NewStatusMessage(statusMessageStyle(fmt.Sprintf("Downloading %s", selectedItemName)))
+					cmds = append(cmds, cmd)
+					err := m.downloadFile(m.currentDir, selectedItemName)
+					handleError(err)
+				}
 			}
 
 			return m, tea.Batch(cmds...)
@@ -88,11 +86,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m model) downloadFile(fileToDownload string) error {
-	srcFile, err := m.sftpClient.Open(fileToDownload)
+func moveDir(cmd tea.Cmd, m *model, selectedItemName string, cmds []tea.Cmd) []tea.Cmd {
+	cmd = m.list.NewStatusMessage(statusMessageStyle(fmt.Sprintf("This is a dir %s", selectedItemName)))
+	currentWd, err := m.sftpClient.RealPath(m.sftpClient.Join(m.currentDir, selectedItemName))
+	handleError(err)
+	m.currentDir = currentWd
+
+	cmd = m.list.SetItems(createItemListModel(currentWd, sftpClient))
+	cmds = append(cmds, cmd)
+	return cmds
+}
+
+func (m model) downloadFile(filePath, fileName string) error {
+	srcFile, err := m.sftpClient.Open(m.sftpClient.Join(filePath, fileName))
 	handleError(err)
 	defer srcFile.Close()
-	destFile, err := os.Create(filepath.Join(".", fileToDownload))
+	destFile, err := os.Create(filepath.Join(".", fileName))
 	defer destFile.Close()
 	handleError(err)
 	_, err = io.Copy(destFile, srcFile)
@@ -132,7 +141,13 @@ func createItemListModel(dirPath string, sftpClient *sftp.Client) []list.Item {
 
 	handleError(err)
 
-	items := []list.Item{}
+	// Insert the previous dir
+	items := []list.Item{
+		&item{
+			title:    "..",
+			rawValue: nil,
+		},
+	}
 
 	for _, value := range fileList {
 		var decoratedItem string
