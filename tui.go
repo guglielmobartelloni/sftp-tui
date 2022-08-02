@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/knipferrc/teacup/icons"
@@ -40,9 +41,10 @@ func (i item) Description() string { return i.description }
 func (i item) FilterValue() string { return i.title }
 
 type model struct {
-	list       list.Model
-	sftpClient *sftp.Client
-	currentDir string
+	list        list.Model
+	progressBar progress.Model
+	sftpClient  *sftp.Client
+	currentDir  string
 }
 
 func (m model) Init() tea.Cmd {
@@ -63,6 +65,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			var cmd tea.Cmd
 			selectedItem := m.list.SelectedItem().(*item).rawValue
+
 			//if it's nil then it is a ".." dir
 			if selectedItem == nil {
 				cmds = moveDir(&m, "..", cmds)
@@ -78,12 +81,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 
+			cmds = append(cmds, m.list.ToggleSpinner())
+			cmd = m.progressBar.IncrPercent(.1)
+			cmds = append(cmds, cmd)
+
 			return m, tea.Batch(cmds...)
 		}
+
+	case progress.FrameMsg:
+		progressModel, progressCommand := m.progressBar.Update(msg)
+		m.progressBar = progressModel.(progress.Model)
+		spinnerCommmand := m.list.ToggleSpinner()
+		return m, tea.Batch(progressCommand, spinnerCommmand)
 
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
 		m.list.SetSize(msg.Width-h, msg.Height-v)
+
 	}
 
 	var cmd tea.Cmd
@@ -115,7 +129,13 @@ func (m model) downloadFile(filePath, fileName string) error {
 }
 
 func (m model) View() string {
-	return docStyle.Render(m.list.View())
+	return docStyle.Render(
+		lipgloss.JoinHorizontal(
+			lipgloss.Top,
+			m.list.View(),
+			m.progressBar.View(),
+		),
+	)
 }
 
 func createItemListModel(dirPath string, sftpClient *sftp.Client) []list.Item {
