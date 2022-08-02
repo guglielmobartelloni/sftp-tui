@@ -25,7 +25,7 @@ var (
 			Foreground(lipgloss.AdaptiveColor{Light: "#ffffff", Dark: "#ffffff"}).
 			Render
 	dirItemStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.AdaptiveColor{Light: "#0477b5", Dark: "#0477b5"}).
+			Foreground(lipgloss.AdaptiveColor{Light: "#64CDEF", Dark: "#64CDEF"}).
 			Render
 )
 
@@ -157,6 +157,11 @@ func createItemListModel(dirPath string, sftpClient *sftp.Client) []list.Item {
 			filepath.Ext(value.Name()),
 			icons.GetIndicator(value.Mode()),
 		)
+		status := fmt.Sprintf("%s %s %s",
+			value.ModTime().Format("2006-01-02 15:04:05"),
+			value.Mode().String(),
+			ConvertBytesToSizeString(value.Size()))
+
 		if value.IsDir() {
 			decoratedItem = icon + " " + dirItemStyle(value.Name())
 
@@ -164,8 +169,44 @@ func createItemListModel(dirPath string, sftpClient *sftp.Client) []list.Item {
 			decoratedItem = icon + " " + fileItemStyle(value.Name())
 		}
 
-		item := &item{title: decoratedItem, rawValue: value}
+		item := &item{title: decoratedItem, rawValue: value, description: status}
 		items = append(items, item)
 	}
 	return items
+}
+
+// ConvertBytesToSizeString converts a byte count to a human readable string.
+func ConvertBytesToSizeString(size int64) string {
+	const (
+		thousand    = 1000
+		ten         = 10
+		fivePercent = 0.0499
+	)
+
+	if size < thousand {
+		return fmt.Sprintf("%dB", size)
+	}
+
+	suffix := []string{
+		"K", // kilo
+		"M", // mega
+		"G", // giga
+		"T", // tera
+		"P", // peta
+		"E", // exa
+		"Z", // zeta
+		"Y", // yotta
+	}
+
+	curr := float64(size) / thousand
+	for _, s := range suffix {
+		if curr < ten {
+			return fmt.Sprintf("%.1f%s", curr-fivePercent, s)
+		} else if curr < thousand {
+			return fmt.Sprintf("%d%s", int(curr), s)
+		}
+		curr /= thousand
+	}
+
+	return ""
 }
