@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/knipferrc/teacup/icons"
 	"github.com/pkg/sftp"
 )
 
@@ -144,17 +145,23 @@ func createItemListModel(dirPath string, sftpClient *sftp.Client) []list.Item {
 	// Insert the previous dir
 	items := []list.Item{
 		&item{
-			title:    "..",
+			title:    dirItemStyle(".."),
 			rawValue: nil,
 		},
 	}
 
 	for _, value := range fileList {
 		var decoratedItem string
+		icon, _ := icons.GetIcon(
+			value.Name(),
+			filepath.Ext(value.Name()),
+			icons.GetIndicator(value.Mode()),
+		)
 		if value.IsDir() {
-			decoratedItem = dirItemStyle(value.Name())
+			decoratedItem = icon + " " + dirItemStyle(value.Name())
+
 		} else {
-			decoratedItem = fileItemStyle(value.Name())
+			decoratedItem = icon + " " + fileItemStyle(value.Name())
 		}
 
 		item := &item{title: decoratedItem, rawValue: value}
