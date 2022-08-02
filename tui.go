@@ -57,16 +57,19 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
+		case "backspace":
+			cmds = moveDir(&m, "..", cmds)
+			return m, tea.Batch(cmds...)
 		case "enter":
 			var cmd tea.Cmd
 			selectedItem := m.list.SelectedItem().(*item).rawValue
 			//if it's nil then it is a ".." dir
 			if selectedItem == nil {
-				cmds = moveDir(cmd, &m, "..", cmds)
+				cmds = moveDir(&m, "..", cmds)
 			} else {
 				selectedItemName := selectedItem.Name()
 				if selectedItem.IsDir() {
-					cmds = moveDir(cmd, &m, selectedItemName, cmds)
+					cmds = moveDir(&m, selectedItemName, cmds)
 				} else {
 					cmd = m.list.NewStatusMessage(statusMessageStyle(fmt.Sprintf("Downloading %s", selectedItemName)))
 					cmds = append(cmds, cmd)
@@ -77,6 +80,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			return m, tea.Batch(cmds...)
 		}
+
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
 		m.list.SetSize(msg.Width-h, msg.Height-v)
@@ -87,12 +91,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func moveDir(cmd tea.Cmd, m *model, selectedItemName string, cmds []tea.Cmd) []tea.Cmd {
+func moveDir(m *model, selectedItemName string, cmds []tea.Cmd) []tea.Cmd {
 	currentWd, err := m.sftpClient.RealPath(m.sftpClient.Join(m.currentDir, selectedItemName))
 	handleError(err)
 	m.currentDir = currentWd
 
-	cmd = m.list.SetItems(createItemListModel(currentWd, sftpClient))
+	cmd := m.list.SetItems(createItemListModel(currentWd, sftpClient))
 	cmds = append(cmds, cmd)
 	cmd = m.list.NewStatusMessage(statusMessageStyle(fmt.Sprintf("Entered %s", selectedItemName)))
 	cmds = append(cmds, cmd)
@@ -129,19 +133,10 @@ func createItemListModel(dirPath string, sftpClient *sftp.Client) []list.Item {
 
 	for _, value := range fileList {
 		var decoratedItem string
-		icon, _ := icons.GetIcon(
-			value.Name(),
-			filepath.Ext(value.Name()),
-			icons.GetIndicator(value.Mode()),
-		)
-		status := fmt.Sprintf("%s %s %s",
-			value.ModTime().Format("2006-01-02 15:04:05"),
-			value.Mode().String(),
-			ConvertBytesToSizeString(value.Size()))
+		icon, status := getDecorations(value)
 
 		if value.IsDir() {
 			decoratedItem = icon + " " + dirItemStyle(value.Name())
-
 		} else {
 			decoratedItem = icon + " " + fileItemStyle(value.Name())
 		}
@@ -150,6 +145,19 @@ func createItemListModel(dirPath string, sftpClient *sftp.Client) []list.Item {
 		items = append(items, item)
 	}
 	return items
+}
+
+func getDecorations(value fs.FileInfo) (string, string) {
+	icon, _ := icons.GetIcon(
+		value.Name(),
+		filepath.Ext(value.Name()),
+		icons.GetIndicator(value.Mode()),
+	)
+	status := fmt.Sprintf("%s %s %s",
+		value.ModTime().Format("2006-01-02 15:04:05"),
+		value.Mode().String(),
+		ConvertBytesToSizeString(value.Size()))
+	return icon, status
 }
 
 // ConvertBytesToSizeString converts a byte count to a human readable string.
