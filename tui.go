@@ -5,11 +5,9 @@ import (
 	"io"
 	"io/fs"
 	"os"
-
 	"path/filepath"
 
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/knipferrc/teacup/icons"
@@ -17,7 +15,7 @@ import (
 )
 
 var (
-	docStyle           = lipgloss.NewStyle().Margin(1, 2)
+	docStyle           = lipgloss.NewStyle().Margin(2, 2)
 	statusMessageStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.AdaptiveColor{Light: "#04B575", Dark: "#04B575"}).
 				Render
@@ -41,10 +39,9 @@ func (i item) Description() string { return i.description }
 func (i item) FilterValue() string { return i.title }
 
 type model struct {
-	list        list.Model
-	progressBar progress.Model
-	sftpClient  *sftp.Client
-	currentDir  string
+	list       list.Model
+	sftpClient *sftp.Client
+	currentDir string
 }
 
 func (m model) Init() tea.Cmd {
@@ -82,17 +79,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 
-			cmd = m.progressBar.IncrPercent(.1)
 			cmds = append(cmds, cmd)
 
 			return m, tea.Batch(cmds...)
 		}
-
-	case progress.FrameMsg:
-		progressModel, progressCommand := m.progressBar.Update(msg)
-		m.progressBar = progressModel.(progress.Model)
-		spinnerCommmand := m.list.ToggleSpinner()
-		return m, tea.Batch(progressCommand, spinnerCommmand)
 
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
@@ -133,7 +123,6 @@ func (m model) View() string {
 		lipgloss.JoinHorizontal(
 			lipgloss.Top,
 			m.list.View(),
-			m.progressBar.View(),
 		),
 	)
 }
@@ -151,23 +140,23 @@ func createItemListModel(dirPath string, sftpClient *sftp.Client) []list.Item {
 		},
 	}
 
-	for _, value := range fileList {
+	for _, file := range fileList {
 		var decoratedItem string
-		icon, status := getDecorations(value)
+		icon, status := getFileDescription(file)
 
-		if value.IsDir() {
-			decoratedItem = icon + " " + dirItemStyle(value.Name())
+		if file.IsDir() {
+			decoratedItem = icon + " " + dirItemStyle(file.Name())
 		} else {
-			decoratedItem = icon + " " + fileItemStyle(value.Name())
+			decoratedItem = icon + " " + fileItemStyle(file.Name())
 		}
 
-		item := &item{title: decoratedItem, rawValue: value, description: status}
+		item := &item{title: decoratedItem, rawValue: file, description: status}
 		items = append(items, item)
 	}
 	return items
 }
 
-func getDecorations(value fs.FileInfo) (string, string) {
+func getFileDescription(value fs.FileInfo) (string, string) {
 	icon, _ := icons.GetIcon(
 		value.Name(),
 		filepath.Ext(value.Name()),
