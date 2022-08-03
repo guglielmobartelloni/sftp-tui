@@ -1,5 +1,5 @@
-# SCP TUI
-An SCP client written in GO
+# SFTP-TUI - A TUI cilent for SFTP
+Super simple SFTP client written in GO
 
 ## License
 MIT
