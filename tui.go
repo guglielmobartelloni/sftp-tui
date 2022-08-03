@@ -76,12 +76,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				} else {
 					cmd = m.list.NewStatusMessage(statusMessageStyle(fmt.Sprintf("Downloading %s", selectedItemName)))
 					cmds = append(cmds, cmd)
+					cmds = append(cmds, m.list.ToggleSpinner())
 					err := m.downloadFile(m.currentDir, selectedItemName)
 					handleError(err)
 				}
 			}
 
-			cmds = append(cmds, m.list.ToggleSpinner())
 			cmd = m.progressBar.IncrPercent(.1)
 			cmds = append(cmds, cmd)
 
