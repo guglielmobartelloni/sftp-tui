@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/charmbracelet/bubbles/list"
-	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/pkg/sftp"
 )
@@ -21,16 +20,27 @@ const (
 )
 
 var (
-	sshClient       = ConnectSSH(username, privateKeyPath, password, host, port, knownHostsPath)
+	sshClient = ConnectSSH(
+		username,
+		privateKeyPath,
+		password,
+		host,
+		port,
+		knownHostsPath,
+	)
 	sftpClient, err = sftp.NewClient(sshClient)
 )
 
 func main() {
+	//Close open connnections
+	defer sftpClient.Close()
+	defer sshClient.Close()
 
 	m := model{
-		list:        list.New(createItemListModel(".", sftpClient), list.NewDefaultDelegate(), 0, 0),
-		sftpClient:  sftpClient,
-		progressBar: progress.New(),
+		list: list.New(
+			createItemListModel(".", sftpClient),
+			list.NewDefaultDelegate(), 0, 0),
+		sftpClient: sftpClient,
 	}
 	m.list.Title = "File List"
 
