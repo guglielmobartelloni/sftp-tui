@@ -1,4 +1,4 @@
-package main
+package ssh
 
 import (
 	"crypto/x509"
@@ -21,8 +21,9 @@ func ConnectSSH(username, privateKeyPath, privateKeyPassword, host, port, knownH
 		log.Fatal(err)
 	}
 	signer, err := signerFromPem(pemBytes, []byte(privateKeyPassword))
-
-	handleError(err)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	hostKeyCallback, err := knownhosts.New(knownHostPath)
 	if err != nil {

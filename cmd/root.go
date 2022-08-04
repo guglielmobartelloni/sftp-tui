@@ -38,7 +38,7 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Fiero")
+		StartProgram()
 	},
 }
 
@@ -58,7 +58,12 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.sftp-tui.yaml)")
+	rootCmd.PersistentFlags().StringVar(
+		&cfgFile,
+		"config",
+		"",
+		"config file (default is $HOME/.sftp-tui.yaml)",
+	)
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -88,4 +93,11 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
 	}
+
+	//	viper.SetDefault("PrivateKeyPath", "~/.ssh/id_rsa")
+	//	viper.SetDefault("Username", "root")
+	//	viper.SetDefault("Password", "")
+	//	viper.SetDefault("KnownHostsPath", "~/.ssh/known_hosts")
+	//	viper.SetDefault("Port", "22")
+
 }

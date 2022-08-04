@@ -1,27 +1,26 @@
-package main
+package tui
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/guglielmobartelloni/sftp-tui/tui"
 	"github.com/pkg/sftp"
+	"github.com/guglielmobartelloni/sftp-tui/ssh"
 )
 
-const (
-	username       = "samoorai"
-	password       = ""
-	privateKeyPath = "/Users/samurai/.ssh/id_rsa"
-	host           = "midas.usbx.me"
-	port           = "22"
-	knownHostsPath = "/Users/samurai/.ssh/known_hosts"
-)
+//const (
+//	username       = "samoorai"
+//	password       = ""
+//	privateKeyPath = "/Users/samurai/.ssh/id_rsa"
+//	host           = "midas.usbx.me"
+//	port           = "22"
+//	knownHostsPath = "/Users/samurai/.ssh/known_hosts"
+//)
 
-var (
-	sshClient = ConnectSSH(
+func StartProgram(username, privateKeyPath, password, host, port, knownHostsPath string) {
+	sshClient := ssh.ConnectSSH(
 		username,
 		privateKeyPath,
 		password,
@@ -29,17 +28,15 @@ var (
 		port,
 		knownHostsPath,
 	)
-	SftpClient, err = sftp.NewClient(sshClient)
-)
-
-func main() {
+	SftpClient, err := sftp.NewClient(sshClient)
+	handleError(err)
 	//Close open connnections
 	defer SftpClient.Close()
 	defer sshClient.Close()
 
-	m := tui.Model{
+	m := Model{
 		List: list.New(
-			tui.CreateItemListModel(".", SftpClient),
+			CreateItemListModel(".", SftpClient),
 			list.NewDefaultDelegate(), 0, 0),
 		SftpClient: SftpClient,
 	}
@@ -54,9 +51,3 @@ func main() {
 
 }
 
-func handleError(err error) {
-	if err != nil {
-		log.Fatal(err)
-	}
-
-}
