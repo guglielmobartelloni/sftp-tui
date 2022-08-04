@@ -97,6 +97,7 @@ func moveDir(m *model, selectedItemName string, cmds []tea.Cmd) []tea.Cmd {
 	return cmds
 }
 
+// Donwload a file based on the path provided
 func (m model) downloadFile(filePath, fileName string) error {
 	srcFile, err := m.sftpClient.Open(m.sftpClient.Join(filePath, fileName))
 	handleError(err)
@@ -117,9 +118,9 @@ func (m model) View() string {
 	)
 }
 
+//Create the list of item by fetching the server
 func createItemListModel(dirPath string, sftpClient *sftp.Client) []list.Item {
 	fileList, err := sftpClient.ReadDir(dirPath)
-
 	handleError(err)
 
 	previousDir := PreviousDir{}
@@ -136,6 +137,7 @@ func createItemListModel(dirPath string, sftpClient *sftp.Client) []list.Item {
 	return items
 }
 
+//Get the fancy file description with file permission, file size, and mod timestamp
 func getFileDescription(value fs.FileInfo) string {
 	status := fmt.Sprintf("%s %s %s",
 		value.ModTime().Format("2006-01-02 15:04:05"),
@@ -144,6 +146,7 @@ func getFileDescription(value fs.FileInfo) string {
 	return status
 }
 
+//Get file icon based on its attributes
 func getFileIcon(value fs.FileInfo) string {
 	icon, _ := icons.GetIcon(
 		value.Name(),
