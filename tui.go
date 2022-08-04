@@ -54,19 +54,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			selectedItem := m.list.SelectedItem().(*item).rawValue
 
 			//if it's nil then it is a ".." dir
-			if selectedItem == nil {
-				cmds = moveDir(&m, "..", cmds)
+			selectedItemName := selectedItem.Name()
+			if selectedItem.IsDir() {
+				cmds = moveDir(&m, selectedItemName, cmds)
 			} else {
-				selectedItemName := selectedItem.Name()
-				if selectedItem.IsDir() {
-					cmds = moveDir(&m, selectedItemName, cmds)
-				} else {
-					cmd = m.list.NewStatusMessage(statusMessageStyle(fmt.Sprintf("Downloading %s", selectedItemName)))
-					cmds = append(cmds, cmd)
-					cmds = append(cmds, m.list.ToggleSpinner())
-					err := m.downloadFile(m.currentDir, selectedItemName)
-					handleError(err)
-				}
+				cmd = m.list.NewStatusMessage(statusMessageStyle(fmt.Sprintf("Downloading %s", selectedItemName)))
+				cmds = append(cmds, cmd)
+				cmds = append(cmds, m.list.ToggleSpinner())
+				err := m.downloadFile(m.currentDir, selectedItemName)
+				handleError(err)
 			}
 
 			cmds = append(cmds, cmd)
