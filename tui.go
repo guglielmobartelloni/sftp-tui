@@ -53,7 +53,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			var cmd tea.Cmd
 			selectedItem := m.list.SelectedItem().(*item).rawValue
 
-			//if it's nil then it is a ".." dir
 			selectedItemName := selectedItem.Name()
 			if selectedItem.IsDir() {
 				cmds = moveDir(&m, selectedItemName, cmds)
