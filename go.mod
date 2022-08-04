@@ -1,4 +1,4 @@
-module github.com/guglielmobartelloni/scp-tui
+module github.com/guglielmobartelloni/sftp-tui
 
 go 1.18
 

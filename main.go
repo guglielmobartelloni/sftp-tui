@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/guglielmobartelloni/sftp-tui/tui"
 	"github.com/pkg/sftp"
 )
 
@@ -28,21 +29,21 @@ var (
 		port,
 		knownHostsPath,
 	)
-	sftpClient, err = sftp.NewClient(sshClient)
+	SftpClient, err = sftp.NewClient(sshClient)
 )
 
 func main() {
 	//Close open connnections
-	defer sftpClient.Close()
+	defer SftpClient.Close()
 	defer sshClient.Close()
 
-	m := model{
-		list: list.New(
-			createItemListModel(".", sftpClient),
+	m := tui.Model{
+		List: list.New(
+			tui.CreateItemListModel(".", SftpClient),
 			list.NewDefaultDelegate(), 0, 0),
-		sftpClient: sftpClient,
+		SftpClient: SftpClient,
 	}
-	m.list.Title = "File List"
+	m.List.Title = "File List"
 
 	p := tea.NewProgram(m, tea.WithAltScreen())
 
@@ -53,7 +54,7 @@ func main() {
 
 }
 
-func handleError(err error) {
+func HandleError(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -1,9 +1,10 @@
-package main
+package tui
 
 import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
 
@@ -28,17 +29,17 @@ var (
 			Render
 )
 
-type model struct {
-	list       list.Model   // the list of items
-	sftpClient *sftp.Client // the sftp client
+type Model struct {
+	List       list.Model   // the list of items
+	SftpClient *sftp.Client // the sftp client
 	currentDir string       // current directory
 }
 
-func (m model) Init() tea.Cmd {
+func (m Model) Init() tea.Cmd {
 	return nil
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
@@ -51,15 +52,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Batch(cmds...)
 		case "enter":
 			var cmd tea.Cmd
-			selectedItem := m.list.SelectedItem().(*item).rawValue
+			selectedItem := m.List.SelectedItem().(*item).rawValue
 
 			selectedItemName := selectedItem.Name()
 			if selectedItem.IsDir() {
 				cmds = moveDir(&m, selectedItemName, cmds)
 			} else {
-				cmd = m.list.NewStatusMessage(statusMessageStyle(fmt.Sprintf("Downloading %s", selectedItemName)))
+				cmd = m.List.NewStatusMessage(statusMessageStyle(fmt.Sprintf("Downloading %s", selectedItemName)))
 				cmds = append(cmds, cmd)
-				cmds = append(cmds, m.list.ToggleSpinner())
+				cmds = append(cmds, m.List.ToggleSpinner())
 				err := m.downloadFile(m.currentDir, selectedItemName)
 				handleError(err)
 			}
@@ -71,30 +72,30 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
-		m.list.SetSize(msg.Width-h, msg.Height-v)
+		m.List.SetSize(msg.Width-h, msg.Height-v)
 
 	}
 
 	var cmd tea.Cmd
-	m.list, cmd = m.list.Update(msg)
+	m.List, cmd = m.List.Update(msg)
 	return m, cmd
 }
 
-func moveDir(m *model, selectedItemName string, cmds []tea.Cmd) []tea.Cmd {
-	currentWd, err := m.sftpClient.RealPath(m.sftpClient.Join(m.currentDir, selectedItemName))
+func moveDir(m *Model, selectedItemName string, cmds []tea.Cmd) []tea.Cmd {
+	currentWd, err := m.SftpClient.RealPath(m.SftpClient.Join(m.currentDir, selectedItemName))
 	handleError(err)
 	m.currentDir = currentWd
 
-	cmd := m.list.SetItems(createItemListModel(currentWd, sftpClient))
+	cmd := m.List.SetItems(CreateItemListModel(currentWd, m.SftpClient))
 	cmds = append(cmds, cmd)
-	cmd = m.list.NewStatusMessage(statusMessageStyle(fmt.Sprintf("Entered %s", selectedItemName)))
+	cmd = m.List.NewStatusMessage(statusMessageStyle(fmt.Sprintf("Entered %s", selectedItemName)))
 	cmds = append(cmds, cmd)
 	return cmds
 }
 
 // Donwload a file based on the path provided
-func (m model) downloadFile(filePath, fileName string) error {
-	srcFile, err := m.sftpClient.Open(m.sftpClient.Join(filePath, fileName))
+func (m Model) downloadFile(filePath, fileName string) error {
+	srcFile, err := m.SftpClient.Open(m.SftpClient.Join(filePath, fileName))
 	handleError(err)
 	defer srcFile.Close()
 	destFile, err := os.Create(filepath.Join(".", fileName))
@@ -104,17 +105,17 @@ func (m model) downloadFile(filePath, fileName string) error {
 	return err
 }
 
-func (m model) View() string {
+func (m Model) View() string {
 	return docStyle.Render(
 		lipgloss.JoinHorizontal(
 			lipgloss.Top,
-			m.list.View(),
+			m.List.View(),
 		),
 	)
 }
 
 // Create the list of item by fetching the server
-func createItemListModel(dirPath string, sftpClient *sftp.Client) []list.Item {
+func CreateItemListModel(dirPath string, sftpClient *sftp.Client) []list.Item {
 	fileList, err := sftpClient.ReadDir(dirPath)
 	handleError(err)
 
@@ -184,4 +185,10 @@ func ConvertBytesToSizeString(size int64) string {
 	}
 
 	return ""
+}
+
+func handleError(err error) {
+	if err != nil {
+		log.Fatal("error")
+	}
 }
