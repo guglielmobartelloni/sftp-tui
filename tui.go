@@ -29,9 +29,9 @@ var (
 )
 
 type model struct {
-	list       list.Model
-	sftpClient *sftp.Client
-	currentDir string
+	list       list.Model   // the list of items
+	sftpClient *sftp.Client // the sftp client
+	currentDir string       // current directory
 }
 
 func (m model) Init() tea.Cmd {
@@ -118,7 +118,7 @@ func (m model) View() string {
 	)
 }
 
-//Create the list of item by fetching the server
+// Create the list of item by fetching the server
 func createItemListModel(dirPath string, sftpClient *sftp.Client) []list.Item {
 	fileList, err := sftpClient.ReadDir(dirPath)
 	handleError(err)
@@ -137,7 +137,7 @@ func createItemListModel(dirPath string, sftpClient *sftp.Client) []list.Item {
 	return items
 }
 
-//Get the fancy file description with file permission, file size, and mod timestamp
+// Get the fancy file description with file permission, file size, and mod timestamp
 func getFileDescription(value fs.FileInfo) string {
 	status := fmt.Sprintf("%s %s %s",
 		value.ModTime().Format("2006-01-02 15:04:05"),
@@ -146,7 +146,6 @@ func getFileDescription(value fs.FileInfo) string {
 	return status
 }
 
-//Get file icon based on its attributes
 func getFileIcon(value fs.FileInfo) string {
 	icon, _ := icons.GetIcon(
 		value.Name(),
