@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/knownhosts"
@@ -18,16 +17,16 @@ func ConnectSSH(username, privateKeyPath, privateKeyPassword, host, port, knownH
 	pemBytes, err := ioutil.ReadFile(privateKeyPath)
 
 	if err != nil {
-		log.Fatal(err)
+		panic("error")
 	}
 	signer, err := signerFromPem(pemBytes, []byte(privateKeyPassword))
 	if err != nil {
-		log.Fatal(err)
+		panic("error")
 	}
 
 	hostKeyCallback, err := knownhosts.New(knownHostPath)
 	if err != nil {
-		log.Fatal(err)
+		panic("error")
 	}
 	config := &ssh.ClientConfig{
 		User: username,
@@ -40,7 +39,7 @@ func ConnectSSH(username, privateKeyPath, privateKeyPassword, host, port, knownH
 	// connect ot ssh server
 	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", host, port), config)
 	if err != nil {
-		log.Fatal(err)
+		panic("error")
 	}
 	return conn
 }

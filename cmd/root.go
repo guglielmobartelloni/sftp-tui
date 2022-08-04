@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/guglielmobartelloni/sftp-tui/tui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -38,7 +39,16 @@ var rootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
-		StartProgram()
+		var (
+			username       = viper.GetString("Username")
+			password       = viper.GetString("Password")
+			host           = viper.GetString("Host")
+			knownHostsPath = viper.GetString("KnownHostsPath")
+			privateKeyPath = viper.GetString("PrivateKeyPath")
+			port           = viper.GetString("Port")
+		)
+		fmt.Printf("privateKeyPath: %v\n", privateKeyPath)
+		tui.StartProgram(username, privateKeyPath, password, host, port, knownHostsPath)
 	},
 }
 

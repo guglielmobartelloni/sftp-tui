@@ -3,7 +3,6 @@ package tui
 import (
 	"fmt"
 	"io/fs"
-	"log"
 	"path/filepath"
 
 	"github.com/knipferrc/teacup/icons"
@@ -67,6 +66,6 @@ func getFileIcon(value fs.FileInfo) string {
 // Utility function to handle errors
 func handleError(err error) {
 	if err != nil {
-		log.Fatal("error")
+		panic("Banana")
 	}
 }
