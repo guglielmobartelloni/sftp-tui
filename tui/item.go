@@ -2,10 +2,12 @@ package tui
 
 import "io/fs"
 
+// Rapresents an a file as an item of the list of the tui client 
 type item struct {
-	rawValue fs.FileInfo
+	rawValue fs.FileInfo // File properties
 }
 
+// Get the stiled title for the file item
 func (i item) Title() string {
 	if i.rawValue.Name() == ".." {
 		return ".."
@@ -20,10 +22,13 @@ func (i item) Title() string {
 	return getFileIcon(i.rawValue) + " " + title
 }
 
+// Get fancy description for the file item
 func (i item) Description() string {
 	if i.rawValue.Name() == ".." {
 		return ""
 	}
 	return getFileDescription(i.rawValue)
 }
+
+// The value to filter when searching
 func (i item) FilterValue() string { return i.rawValue.Name() }
