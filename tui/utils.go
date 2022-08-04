@@ -54,6 +54,7 @@ func getFileDescription(value fs.FileInfo) string {
 	return status
 }
 
+// Get the file icons based on its properties
 func getFileIcon(value fs.FileInfo) string {
 	icon, _ := icons.GetIcon(
 		value.Name(),
@@ -63,6 +64,7 @@ func getFileIcon(value fs.FileInfo) string {
 	return icon
 }
 
+// Utility function to handle errors
 func handleError(err error) {
 	if err != nil {
 		log.Fatal("error")
