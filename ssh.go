@@ -12,6 +12,7 @@ import (
 	"golang.org/x/crypto/ssh/knownhosts"
 )
 
+// Function to create an ssh connection using a private key
 func ConnectSSH(username, privateKeyPath, privateKeyPassword, host, port, knownHostPath string) *ssh.Client {
 
 	pemBytes, err := ioutil.ReadFile(privateKeyPath)
@@ -21,7 +22,7 @@ func ConnectSSH(username, privateKeyPath, privateKeyPassword, host, port, knownH
 	}
 	signer, err := signerFromPem(pemBytes, []byte(privateKeyPassword))
 
-	HandleError(err)
+	handleError(err)
 
 	hostKeyCallback, err := knownhosts.New(knownHostPath)
 	if err != nil {
@@ -110,28 +111,4 @@ func parsePemBlock(block *pem.Block) (interface{}, error) {
 	default:
 		return nil, fmt.Errorf("parsing private key failed, unsupported key type %q", block.Type)
 	}
-}
-
-func RunCommand(cmd string, sshClient *ssh.Client) (string, error) {
-
-	session, err := sshClient.NewSession()
-	HandleError(err)
-	defer session.Close()
-
-	// Set up terminal modes
-	// modes := ssh.TerminalModes{
-	// 	ssh.ECHO:          0, // disable echoing
-	// 	ssh.ECHOCTL:       0,
-	// 	ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
-	// 	ssh.TTY_OP_OSPEED: 14400, // output speed = 14.4kbaud
-	// }
-
-	// err = session.RequestPty("xterm", 80, 40, modes)
-
-	HandleError(err)
-
-	var output []byte
-	output, err = session.Output(cmd)
-
-	return string(output), err
 }
