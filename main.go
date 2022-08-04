@@ -54,7 +54,7 @@ func main() {
 
 }
 
-func HandleError(err error) {
+func handleError(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
