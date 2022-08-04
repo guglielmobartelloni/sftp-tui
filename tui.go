@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
@@ -29,14 +30,29 @@ var (
 )
 
 type item struct {
-	title       string
-	description string
-	rawValue    fs.FileInfo
+	rawValue fs.FileInfo
 }
 
-func (i item) Title() string       { return i.title }
-func (i item) Description() string { return i.description }
-func (i item) FilterValue() string { return i.title }
+func (i item) Title() string {
+	if i.rawValue.Name() == ".." {
+		return ".."
+	}
+
+	var title string
+	if i.rawValue.IsDir() {
+		title = dirItemStyle(i.rawValue.Name())
+	} else {
+		title = fileItemStyle(i.rawValue.Name())
+	}
+	return getFileIcon(i.rawValue) + " " + title
+}
+func (i item) Description() string {
+	if i.rawValue.Name() == ".." {
+		return ""
+	}
+	return getFileDescription(i.rawValue)
+}
+func (i item) FilterValue() string { return i.rawValue.Name() }
 
 type model struct {
 	list       list.Model
@@ -132,41 +148,35 @@ func createItemListModel(dirPath string, sftpClient *sftp.Client) []list.Item {
 
 	handleError(err)
 
+	previousDir := PreviousDir{}
 	// Insert the previous dir
 	items := []list.Item{
 		&item{
-			title:    dirItemStyle(".."),
-			rawValue: nil,
+			rawValue: &previousDir,
 		},
 	}
 
 	for _, file := range fileList {
-		var decoratedItem string
-		icon, status := getFileDescription(file)
-
-		if file.IsDir() {
-			decoratedItem = icon + " " + dirItemStyle(file.Name())
-		} else {
-			decoratedItem = icon + " " + fileItemStyle(file.Name())
-		}
-
-		item := &item{title: decoratedItem, rawValue: file, description: status}
-		items = append(items, item)
+		items = append(items, &item{rawValue: file})
 	}
 	return items
 }
 
-func getFileDescription(value fs.FileInfo) (string, string) {
+func getFileDescription(value fs.FileInfo) string {
+	status := fmt.Sprintf("%s %s %s",
+		value.ModTime().Format("2006-01-02 15:04:05"),
+		value.Mode().String(),
+		ConvertBytesToSizeString(value.Size()))
+	return status
+}
+
+func getFileIcon(value fs.FileInfo) string {
 	icon, _ := icons.GetIcon(
 		value.Name(),
 		filepath.Ext(value.Name()),
 		icons.GetIndicator(value.Mode()),
 	)
-	status := fmt.Sprintf("%s %s %s",
-		value.ModTime().Format("2006-01-02 15:04:05"),
-		value.Mode().String(),
-		ConvertBytesToSizeString(value.Size()))
-	return icon, status
+	return icon
 }
 
 // ConvertBytesToSizeString converts a byte count to a human readable string.
@@ -204,3 +214,12 @@ func ConvertBytesToSizeString(size int64) string {
 
 	return ""
 }
+
+type PreviousDir struct{}
+
+func (p *PreviousDir) IsDir() bool        { return true }
+func (p *PreviousDir) Name() string       { return ".." }
+func (p *PreviousDir) Size() int64        { return 0 }
+func (p *PreviousDir) Mode() fs.FileMode  { return os.FileMode(0) }
+func (p *PreviousDir) ModTime() time.Time { return time.Time{} }
+func (p *PreviousDir) Sys() any           { return nil }
