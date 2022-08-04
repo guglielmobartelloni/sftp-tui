@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// Rapresent the ".." dir
 type PreviousDir struct{}
 
 func (p *PreviousDir) IsDir() bool        { return true }
