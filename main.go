@@ -1,62 +1,28 @@
+/*
+Copyright © 2022 Guglielmo Bartelloni bartelloni.guglielmo@gmail.com
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+*/
 package main
 
-import (
-	"fmt"
-	"log"
-	"os"
-
-	"github.com/charmbracelet/bubbles/list"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/guglielmobartelloni/sftp-tui/tui"
-	"github.com/pkg/sftp"
-)
-
-const (
-	username       = "samoorai"
-	password       = ""
-	privateKeyPath = "/Users/samurai/.ssh/id_rsa"
-	host           = "midas.usbx.me"
-	port           = "22"
-	knownHostsPath = "/Users/samurai/.ssh/known_hosts"
-)
-
-var (
-	sshClient = ConnectSSH(
-		username,
-		privateKeyPath,
-		password,
-		host,
-		port,
-		knownHostsPath,
-	)
-	SftpClient, err = sftp.NewClient(sshClient)
-)
+import "github.com/guglielmobartelloni/sftp-tui/cmd"
 
 func main() {
-	//Close open connnections
-	defer SftpClient.Close()
-	defer sshClient.Close()
-
-	m := tui.Model{
-		List: list.New(
-			tui.CreateItemListModel(".", SftpClient),
-			list.NewDefaultDelegate(), 0, 0),
-		SftpClient: SftpClient,
-	}
-	m.List.Title = "File List"
-
-	p := tea.NewProgram(m, tea.WithAltScreen())
-
-	if err := p.Start(); err != nil {
-		fmt.Println("Error running program:", err)
-		os.Exit(1)
-	}
-
-}
-
-func handleError(err error) {
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	cmd.Execute()
 }
