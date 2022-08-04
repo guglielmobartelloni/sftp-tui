@@ -3,15 +3,12 @@ package tui
 import (
 	"fmt"
 	"io"
-	"io/fs"
-	"log"
 	"os"
 	"path/filepath"
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/knipferrc/teacup/icons"
 	"github.com/pkg/sftp"
 )
 
@@ -131,64 +128,4 @@ func CreateItemListModel(dirPath string, sftpClient *sftp.Client) []list.Item {
 		items = append(items, &item{rawValue: file})
 	}
 	return items
-}
-
-// Get the fancy file description with file permission, file size, and mod timestamp
-func getFileDescription(value fs.FileInfo) string {
-	status := fmt.Sprintf("%s %s %s",
-		value.ModTime().Format("2006-01-02 15:04:05"),
-		value.Mode().String(),
-		ConvertBytesToSizeString(value.Size()))
-	return status
-}
-
-func getFileIcon(value fs.FileInfo) string {
-	icon, _ := icons.GetIcon(
-		value.Name(),
-		filepath.Ext(value.Name()),
-		icons.GetIndicator(value.Mode()),
-	)
-	return icon
-}
-
-// ConvertBytesToSizeString converts a byte count to a human readable string.
-func ConvertBytesToSizeString(size int64) string {
-	const (
-		thousand    = 1000
-		ten         = 10
-		fivePercent = 0.0499
-	)
-
-	if size < thousand {
-		return fmt.Sprintf("%dB", size)
-	}
-
-	suffix := []string{
-		"K", // kilo
-		"M", // mega
-		"G", // giga
-		"T", // tera
-		"P", // peta
-		"E", // exa
-		"Z", // zeta
-		"Y", // yotta
-	}
-
-	curr := float64(size) / thousand
-	for _, s := range suffix {
-		if curr < ten {
-			return fmt.Sprintf("%.1f%s", curr-fivePercent, s)
-		} else if curr < thousand {
-			return fmt.Sprintf("%d%s", int(curr), s)
-		}
-		curr /= thousand
-	}
-
-	return ""
-}
-
-func handleError(err error) {
-	if err != nil {
-		log.Fatal("error")
-	}
 }

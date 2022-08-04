@@ -21,7 +21,7 @@ func ConnectSSH(username, privateKeyPath, privateKeyPassword, host, port, knownH
 	}
 	signer, err := signerFromPem(pemBytes, []byte(privateKeyPassword))
 
-	handleError(err)
+	HandleError(err)
 
 	hostKeyCallback, err := knownhosts.New(knownHostPath)
 	if err != nil {
@@ -115,7 +115,7 @@ func parsePemBlock(block *pem.Block) (interface{}, error) {
 func RunCommand(cmd string, sshClient *ssh.Client) (string, error) {
 
 	session, err := sshClient.NewSession()
-	handleError(err)
+	HandleError(err)
 	defer session.Close()
 
 	// Set up terminal modes
@@ -128,7 +128,7 @@ func RunCommand(cmd string, sshClient *ssh.Client) (string, error) {
 
 	// err = session.RequestPty("xterm", 80, 40, modes)
 
-	handleError(err)
+	HandleError(err)
 
 	var output []byte
 	output, err = session.Output(cmd)
