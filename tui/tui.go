@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -58,7 +59,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmd = m.List.NewStatusMessage(statusMessageStyle(fmt.Sprintf("Downloading %s", selectedItemName)))
 				cmds = append(cmds, cmd)
 				cmds = append(cmds, m.List.ToggleSpinner())
-				err := m.downloadFile(m.currentDir, selectedItemName)
+				err := m.downloadFile(m.currentDir, selectedItem)
 				handleError(err)
 			}
 
@@ -91,11 +92,17 @@ func moveDir(m *Model, selectedItemName string, cmds []tea.Cmd) []tea.Cmd {
 }
 
 // Donwload a file based on the path provided
-func (m Model) downloadFile(filePath, fileName string) error {
-	srcFile, err := m.SftpClient.Open(m.SftpClient.Join(filePath, fileName))
+func (m *Model) downloadFile(filePath string, fileItem fs.FileInfo) error {
+	var srcFile io.Reader
+	srcFile, err := m.SftpClient.Open(m.SftpClient.Join(filePath, fileItem.Name()))
 	handleError(err)
-	defer srcFile.Close()
-	destFile, err := os.Create(filepath.Join(".", fileName))
+	// Instrument with our counter.
+	counter := &WriteCounter{
+		TotalFileSize: fileItem.Size(),
+	}
+	srcFile = io.TeeReader(srcFile, counter)
+
+	destFile, err := os.Create(filepath.Join(".", fileItem.Name()))
 	defer destFile.Close()
 	handleError(err)
 	_, err = io.Copy(destFile, srcFile)
