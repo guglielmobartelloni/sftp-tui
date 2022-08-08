@@ -66,6 +66,6 @@ func getFileIcon(value fs.FileInfo) string {
 // Utility function to handle errors
 func handleError(err error) {
 	if err != nil {
-		panic("An error occurred")
+		panic(err)
 	}
 }

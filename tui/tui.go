@@ -6,8 +6,10 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/pkg/sftp"
@@ -27,10 +29,13 @@ var (
 			Render
 )
 
+type barPercentage float64
+
 type Model struct {
 	List       list.Model   // the list of items
 	SftpClient *sftp.Client // the sftp client
 	currentDir string       // current directory
+	progress   progress.Model
 }
 
 func (m Model) Init() tea.Cmd {
@@ -58,15 +63,22 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				cmd = m.List.NewStatusMessage(statusMessageStyle(fmt.Sprintf("Downloading %s", selectedItemName)))
 				cmds = append(cmds, cmd)
-				cmds = append(cmds, m.List.ToggleSpinner())
-				err := m.downloadFile(m.currentDir, selectedItem)
-				handleError(err)
+				cmds = append(cmds, m.downloadFile(selectedItem))
 			}
-
-			cmds = append(cmds, cmd)
 
 			return m, tea.Batch(cmds...)
 		}
+
+	case *barPercentage:
+		cmd := m.progress.SetPercent(float64(*msg) / 100.0)
+		return m, tea.Batch(cmd, tea.Tick(time.Millisecond*500, func(t time.Time) tea.Msg {
+			return msg
+		}))
+
+	case progress.FrameMsg:
+		progressModel, cmd := m.progress.Update(msg)
+		m.progress = progressModel.(progress.Model)
+		return m, cmd
 
 	case tea.WindowSizeMsg:
 		h, v := docStyle.GetFrameSize()
@@ -92,21 +104,28 @@ func moveDir(m *Model, selectedItemName string, cmds []tea.Cmd) []tea.Cmd {
 }
 
 // Donwload a file based on the path provided
-func (m *Model) downloadFile(filePath string, fileItem fs.FileInfo) error {
-	var srcFile io.Reader
-	srcFile, err := m.SftpClient.Open(m.SftpClient.Join(filePath, fileItem.Name()))
-	handleError(err)
-	// Instrument with our counter.
-	counter := &WriteCounter{
-		TotalFileSize: fileItem.Size(),
-	}
-	srcFile = io.TeeReader(srcFile, counter)
+func (m *Model) downloadFile(fileItem fs.FileInfo) tea.Cmd {
+	return func() tea.Msg {
+		var srcFile io.Reader
+		srcFile, err := m.SftpClient.Open(m.SftpClient.Join(m.currentDir, fileItem.Name()))
+		handleError(err)
+		// Instrument with our counter.
+		barPercentage := barPercentage(0)
+		counter := &WriteCounter{
+			TotalFileSize: fileItem.Size(),
+			percentage:    &barPercentage,
+		}
+		srcFile = io.TeeReader(srcFile, counter)
 
-	destFile, err := os.Create(filepath.Join(".", fileItem.Name()))
-	defer destFile.Close()
-	handleError(err)
-	_, err = io.Copy(destFile, srcFile)
-	return err
+		destFile, err := os.Create(filepath.Join(".", fileItem.Name()))
+		handleError(err)
+		go func() {
+			defer destFile.Close()
+			_, err = io.Copy(destFile, srcFile)
+			handleError(err)
+		}()
+		return &barPercentage
+	}
 }
 
 func (m Model) View() string {
@@ -114,6 +133,7 @@ func (m Model) View() string {
 		lipgloss.JoinHorizontal(
 			lipgloss.Top,
 			m.List.View(),
+			m.progress.View(),
 		),
 	)
 }

@@ -5,9 +5,10 @@ import (
 	"os"
 
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/pkg/sftp"
 	"github.com/guglielmobartelloni/sftp-tui/ssh"
+	"github.com/pkg/sftp"
 )
 
 //const (
@@ -39,6 +40,7 @@ func StartProgram(username, privateKeyPath, password, host, port, knownHostsPath
 			CreateItemListModel(".", SftpClient),
 			list.NewDefaultDelegate(), 0, 0),
 		SftpClient: SftpClient,
+		progress:   progress.New(),
 	}
 	m.List.Title = "File List"
 
@@ -50,4 +52,3 @@ func StartProgram(username, privateKeyPath, password, host, port, knownHostsPath
 	}
 
 }
-
