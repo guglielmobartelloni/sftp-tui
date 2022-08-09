@@ -71,9 +71,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case *barPercentage:
 		cmd := m.progress.SetPercent(float64(*msg) / 100.0)
-		return m, tea.Batch(cmd, tea.Tick(time.Millisecond*500, func(t time.Time) tea.Msg {
-			return msg
-		}))
+		//fmt.Println(int(*msg))
+		if int(*msg) != 100 {
+			return m, tea.Batch(cmd, tea.Tick(time.Millisecond*500, func(t time.Time) tea.Msg {
+				return msg
+			}))
+		} else {
+			return m, func() tea.Msg {
+				return msg
+			}
+		}
 
 	case progress.FrameMsg:
 		progressModel, cmd := m.progress.Update(msg)
@@ -111,7 +118,7 @@ func (m *Model) downloadFile(fileItem fs.FileInfo) tea.Cmd {
 		handleError(err)
 		// Instrument with our counter.
 		barPercentage := barPercentage(0)
-		counter := &WriteCounter{
+		counter := &writeCounter{
 			TotalFileSize: fileItem.Size(),
 			percentage:    &barPercentage,
 		}
@@ -134,6 +141,7 @@ func (m Model) View() string {
 			lipgloss.Top,
 			m.List.View(),
 			m.progress.View(),
+			//lipgloss.PlaceVertical(40, lipgloss.Center, m.progress.View()),
 		),
 	)
 }

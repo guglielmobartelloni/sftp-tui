@@ -17,16 +17,16 @@ func ConnectSSH(username, privateKeyPath, privateKeyPassword, host, port, knownH
 	pemBytes, err := ioutil.ReadFile(privateKeyPath)
 
 	if err != nil {
-		panic("error")
+		panic(err)
 	}
 	signer, err := signerFromPem(pemBytes, []byte(privateKeyPassword))
 	if err != nil {
-		panic("error")
+		panic(err)
 	}
 
 	hostKeyCallback, err := knownhosts.New(knownHostPath)
 	if err != nil {
-		panic("error")
+		panic(err)
 	}
 	config := &ssh.ClientConfig{
 		User: username,
@@ -39,7 +39,7 @@ func ConnectSSH(username, privateKeyPath, privateKeyPassword, host, port, knownH
 	// connect ot ssh server
 	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%s", host, port), config)
 	if err != nil {
-		panic("error")
+		panic(err)
 	}
 	return conn
 }
