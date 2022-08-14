@@ -29,8 +29,10 @@ var (
 			Render
 )
 
+// Struct that keeps the progress bar percantage
 type barPercentage float64
 
+// Holds the state of the tui
 type Model struct {
 	List       list.Model   // the list of items
 	SftpClient *sftp.Client // the sftp client
