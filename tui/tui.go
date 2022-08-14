@@ -138,7 +138,9 @@ func (m Model) View() string {
 	f, err := tea.LogToFile("debug.log", "debug")
 	handleError(err)
 	f.WriteString(fmt.Sprintf("Percentuale: %f", m.progress.Percent()))
+	// Don't render the progress bar if theres no donwload or if the download is finished
 	if m.progress.Percent() != 0 && m.progress.Percent() != 1 {
+		// Renders the progress bar TODO needs some work
 		return docStyle.Render(
 			lipgloss.JoinHorizontal(
 				lipgloss.Center,
@@ -147,6 +149,7 @@ func (m Model) View() string {
 			),
 		)
 	} else {
+		// Renders the file list
 		return docStyle.Render(m.List.View())
 	}
 }
