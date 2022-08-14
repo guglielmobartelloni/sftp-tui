@@ -77,9 +77,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return msg
 			}))
 		} else {
-			return m, func() tea.Msg {
-				return msg
-			}
 		}
 
 	case progress.FrameMsg:
@@ -118,7 +115,7 @@ func (m *Model) downloadFile(fileItem fs.FileInfo) tea.Cmd {
 		handleError(err)
 		// Instrument with our counter.
 		barPercentage := barPercentage(0)
-		counter := &writeCounter{
+		counter := &writeProgressCounter{
 			TotalFileSize: fileItem.Size(),
 			percentage:    &barPercentage,
 		}
@@ -136,14 +133,20 @@ func (m *Model) downloadFile(fileItem fs.FileInfo) tea.Cmd {
 }
 
 func (m Model) View() string {
-	return docStyle.Render(
-		lipgloss.JoinHorizontal(
-			lipgloss.Top,
-			m.List.View(),
-			m.progress.View(),
-			//lipgloss.PlaceVertical(40, lipgloss.Center, m.progress.View()),
-		),
-	)
+	f, err := tea.LogToFile("debug.log", "debug")
+	handleError(err)
+	f.WriteString(fmt.Sprintf("Percentuale: %f", m.progress.Percent()))
+	if m.progress.Percent() != 0 && m.progress.Percent() != 1 {
+		return docStyle.Render(
+			lipgloss.JoinHorizontal(
+				lipgloss.Center,
+				m.progress.View(),
+				// lipgloss.NewStyle().Render("Banana"),
+			),
+		)
+	} else {
+		return docStyle.Render(m.List.View())
+	}
 }
 
 // Create the list of item by fetching the server
@@ -152,7 +155,7 @@ func CreateItemListModel(dirPath string, sftpClient *sftp.Client) []list.Item {
 	handleError(err)
 
 	previousDir := PreviousDir{}
-	// Insert the previous dir
+	// Insert the .. dir
 	items := []list.Item{
 		&item{
 			rawValue: &previousDir,
