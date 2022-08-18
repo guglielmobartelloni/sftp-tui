@@ -1,0 +1,65 @@
+env:
+  - GO111MODULE=on
+  - CGO_ENABLED=0
+before:
+  hooks:
+    - go mod tidy
+builds:
+  -
+    binary: sftp-tui
+    ldflags: -s -w -X main.Version=v{{ .Version }} -X main.CommitSHA={{ .Commit }} -X main.CommitDate={{ .CommitDate }}
+    goos:
+      - linux
+      - darwin
+      - windows
+      - freebsd
+      - openbsd
+      - netbsd
+    goarch:
+      - amd64
+      - arm64
+      - "386"
+      - arm
+    goarm:
+      - "7"
+    ignore:
+      - goos: windows
+        goarch: arm64
+      - goos: windows
+        goarm: "7"
+
+archives:
+  -
+    builds:
+      - sftp-tui
+    format_overrides:
+      - goos: windows
+        format: zip
+    replacements:
+      windows: Windows
+      darwin: Darwin
+      386: i386
+      amd64: x86_64
+
+nfpms:
+  -
+    vendor: guglielmobartelloni
+    maintainer: "Guglielmo Bartelloni <bartelloni.guglielmo@gmail.com>"
+    description: "A cilent for SFTP"
+    license: MIT
+    formats:
+      - apk
+      - deb
+      - rpm
+    bindir: /usr/bin
+
+brews:
+  - goarm: 6
+    tap:
+      owner: guglielmobartelloni
+      name: homebrew-tap
+    commit_author:
+      name: "Guglielmo Bartelloni"
+      email: "bartelloni.guglielmo@gmail.com"
+    description: "A TUI client for SFTP"
+    # skip_upload: true
