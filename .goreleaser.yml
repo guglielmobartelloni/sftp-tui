@@ -57,7 +57,7 @@ brews:
   - goarm: 6
     tap:
       owner: guglielmobartelloni
-      name: homebrew-tap
+      name: sftp-tui
     commit_author:
       name: "Guglielmo Bartelloni"
       email: "bartelloni.guglielmo@gmail.com"
